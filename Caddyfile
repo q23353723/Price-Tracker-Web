@@ -1,0 +1,14 @@
+# 針對主要網域，可以選擇要不要直接提供靜態網頁或重定向
+laiyouda.com {
+    respond "Price Tracker API is running."
+}
+
+# 後端 API 代理
+api.laiyouda.com {
+    reverse_proxy backend:8000
+}
+
+# pgAdmin 管理介面代理
+dbadmin.laiyouda.com {
+    reverse_proxy pgadmin:80
+}
