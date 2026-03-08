@@ -24,6 +24,8 @@ jobs:
           host: ${{ secrets.GCP_VM_IP }}
           username: ${{ secrets.GCP_VM_USERNAME }}
           key: ${{ secrets.GCP_SSH_KEY }}
+          script_stop: true
+          timeout: 30m
           script: |
             cd ~/price-tracker-agent-playground || mkdir -p ~/price-tracker-agent-playground
             
