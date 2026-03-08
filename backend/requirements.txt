@@ -11,3 +11,4 @@ playwright
 apscheduler
 requests
 python-dotenv
+line-bot-sdk
