@@ -1,0 +1,13 @@
+﻿fastapi
+uvicorn
+pydantic[email]
+sqlalchemy
+asyncpg
+psycopg2-binary
+python-jose[cryptography]
+bcrypt
+python-multipart
+playwright
+apscheduler
+requests
+python-dotenv

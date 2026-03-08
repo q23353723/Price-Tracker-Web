@@ -1,0 +1,9 @@
+<template>
+  <div class="min-h-screen">
+    <router-view></router-view>
+  </div>
+</template>
+
+<script setup>
+import './style.css'
+</script>
