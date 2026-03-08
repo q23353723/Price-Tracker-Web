@@ -21,9 +21,9 @@ jobs:
       - name: Deploy to GCP VM
         uses: appleboy/ssh-action@master
         with:
-          host: $${{ secrets.GCP_VM_IP }}
-          username: $${{ secrets.GCP_VM_USERNAME }}
-          key: $${{ secrets.GCP_SSH_KEY }}
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_VM_USERNAME }}
+          key: ${{ secrets.GCP_SSH_KEY }}
           script: |
             cd ~/price-tracker-agent-playground || mkdir -p ~/price-tracker-agent-playground
             
@@ -33,7 +33,7 @@ jobs:
             # 如果還沒有 .git，則初始化並設定遠端 (首次部署)
             if [ ! -d ".git" ]; then
               git init
-              git remote add origin https://github.com/$${{ github.repository }}.git
+              git remote add origin https://github.com/${{ github.repository }}.git
             fi
             
             # 拉取最新程式碼 (避免與本地有衝突，強制重置)
