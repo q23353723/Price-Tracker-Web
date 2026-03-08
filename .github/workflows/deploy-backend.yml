@@ -44,8 +44,8 @@ jobs:
             echo "POSTGRES_USER=${{ secrets.DB_USER }}" > .env.prod
             echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.prod
             echo "POSTGRES_DB=${{ secrets.DB_NAME }}" >> .env.prod
-            echo "PGADMIN_EMAIL=${{ secrets.PGADMIN_EMAIL }}" >> .env.prod
-            echo "PGADMIN_PASSWORD=${{ secrets.PGADMIN_PASSWORD }}" >> .env.prod
+            echo "PGADMIN_DEFAULT_EMAIL=${{ secrets.PGADMIN_EMAIL }}" >> .env.prod
+            echo "PGADMIN_DEFAULT_PASSWORD=${{ secrets.PGADMIN_PASSWORD }}" >> .env.prod
             echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/${{ secrets.DB_NAME }}" >> .env.prod
             echo "SECRET_KEY=${{ secrets.BACKEND_SECRET_KEY }}" >> .env.prod
             echo "ALGORITHM=HS256" >> .env.prod
