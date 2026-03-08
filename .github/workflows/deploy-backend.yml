@@ -28,16 +28,15 @@ jobs:
           script: |
             cd ~/price-tracker-agent-playground || mkdir -p ~/price-tracker-agent-playground
             
-            # 確保資料夾存在並進入
-            cd ~/price-tracker-agent-playground
+            cd ~/price-tracker-agent-playground || exit 1
             
-            # 如果還沒有 .git，則初始化並設定遠端 (首次部署)
-            if [ ! -d ".git" ]; then
-              git init
-              git remote add origin https://github.com/${{ github.repository }}.git
+            # 刪除潛在的損毀版控資料夾並重新完整的 Clone 程式碼
+            if [ -d ".git" ]; then
+              rm -rf .git
             fi
             
-            # 拉取最新程式碼 (避免與本地有衝突，強制重置)
+            git init
+            git remote add origin https://github.com/${{ github.repository }}.git
             git fetch origin main
             git reset --hard origin/main
             
