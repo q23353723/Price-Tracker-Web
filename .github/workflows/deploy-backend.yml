@@ -40,5 +40,16 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             
+            # 從 GitHub Secrets 中動態寫入環境變數到 .env.prod
+            echo "POSTGRES_USER=${{ secrets.DB_USER }}" > .env.prod
+            echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.prod
+            echo "POSTGRES_DB=${{ secrets.DB_NAME }}" >> .env.prod
+            echo "PGADMIN_EMAIL=${{ secrets.PGADMIN_EMAIL }}" >> .env.prod
+            echo "PGADMIN_PASSWORD=${{ secrets.PGADMIN_PASSWORD }}" >> .env.prod
+            echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/${{ secrets.DB_NAME }}" >> .env.prod
+            echo "SECRET_KEY=${{ secrets.BACKEND_SECRET_KEY }}" >> .env.prod
+            echo "ALGORITHM=HS256" >> .env.prod
+            echo "ACCESS_TOKEN_EXPIRE_MINUTES=1440" >> .env.prod
+            
             # 重新啟動服務
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
