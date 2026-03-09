@@ -65,41 +65,60 @@ async def fetch_product_details(url: str, shared_page=None):
     return await asyncio.to_thread(_fetch_product_details_sync, url)
 
 def _fetch_product_details_sync(url: str):
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-        }
-        res = requests.get(url, headers=headers, timeout=15)
-        res.raise_for_status()
-        
-        soup = BeautifulSoup(res.text, "html.parser")
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # 加入更擬真的 Headers 偽裝成真實瀏覽器，防止被 Momo 阻擋
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Sec-Ch-Ua": '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": '"Windows"',
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
+                "Connection": "keep-alive"
+            }
+            res = requests.get(url, headers=headers, timeout=20)
+            res.raise_for_status()
+            
+            soup = BeautifulSoup(res.text, "html.parser")
 
-        # 1. 圖片
-        image_url = _get_meta_content(soup, "og:image")
+            # 1. 圖片
+            image_url = _get_meta_content(soup, "og:image")
 
-        # 2. 商品名稱
-        name = soup.title.string if soup.title else ""
-        og_title = _get_meta_content(soup, "og:title")
-        if og_title:
-            name = og_title
+            # 2. 商品名稱
+            name = ""
+            if soup.title and soup.title.string:
+                name = soup.title.string.strip()
+            og_title = _get_meta_content(soup, "og:title")
+            if og_title:
+                name = og_title.strip()
 
-        # 3. 價格
-        price = None
-        if "momoshop.com.tw" in url:
-            price = _extract_price_momo(soup)
+            # 3. 價格
+            price = None
+            if "momoshop.com.tw" in url:
+                price = _extract_price_momo(soup)
 
-        if price is None:
-            price = _extract_price_generic(soup)
+            if price is None:
+                price = _extract_price_generic(soup)
 
-        return {
-            "name": name,
-            "image_url": image_url,
-            "current_price": price,
-        }
+            return {
+                "name": name,
+                "image_url": image_url,
+                "current_price": price,
+            }
 
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+        except Exception as e:
+            print(f"Error fetching {url} on attempt {attempt + 1}: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2)  # 等待 2 秒後重試
+            else:
+                return None
 
