@@ -11,21 +11,8 @@ scheduler = AsyncIOScheduler()
 def update_product_price(product_id):
     """
     同步版本的爬蟲更新函式，供 FastAPI BackgroundTasks 使用。
-    在 Windows 上，BackgroundTasks 在執行緒中執行，無法直接使用現有的
-    async event loop 執行 Playwright（需要 subprocess 支援）。
-    因此在 Windows 環境下，我們獨立建立一個專屬此 thread 的 ProactorEventLoop，
-    避免修改全域的 event loop policy 而干擾 Uvicorn 的運行。
     """
-    import sys
-    if sys.platform == 'win32':
-        loop = asyncio.ProactorEventLoop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(_update_product_price_async(product_id))
-        finally:
-            loop.close()
-    else:
-        asyncio.run(_update_product_price_async(product_id))
+    asyncio.run(_update_product_price_async(product_id))
 
 
 def _handle_product_price_update(db: Session, product: models.Product, details: dict):
@@ -78,35 +65,27 @@ async def _update_product_price_async(product_id):
 
 
 async def _batch_update_all_prices_async():
-    """使用共用的 Browser 實批次更新所有商品價格"""
-    from playwright.async_api import async_playwright
+    """批次更新所有商品價格 (使用 requests)"""
     db: Session = SessionLocal()
     try:
         products = db.query(models.Product).all()
         if not products:
             return
             
-        print(f"Starting batch price check for {len(products)} products...")
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--disable-extensions", "--single-process"]
-            )
-            page = await browser.new_page()
+        print(f"Starting batch price check for {len(products)} products using requests...")
             
-            for product in products:
-                print(f"Batch checking price for: {product.url}")
-                details = await crawler.fetch_product_details(product.url, shared_page=page)
-                if details:
-                    print(f"Batch fetched details: {details}")
-                    _handle_product_price_update(db, product, details)
-                else:
-                    print(f"Batch failed to fetch details for {product.url}")
-                    
-                # 休眠一下避免短時間過於頻繁的請求被阻擋
-                await asyncio.sleep(3)
+        for product in products:
+            print(f"Batch checking price for: {product.url}")
+            details = await crawler.fetch_product_details(product.url)
+            if details:
+                print(f"Batch fetched details: {details}")
+                _handle_product_price_update(db, product, details)
+            else:
+                print(f"Batch failed to fetch details for {product.url}")
                 
-            await browser.close()
+            # 休眠一下避免短時間過於頻繁的請求被阻擋
+            await asyncio.sleep(3)
+                
     except Exception as e:
         print(f"Error in batch price check: {e}")
     finally:
@@ -114,16 +93,8 @@ async def _batch_update_all_prices_async():
 
 
 def run_batch_check_sync():
-    import sys
-    if sys.platform == 'win32':
-        loop = asyncio.ProactorEventLoop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(_batch_update_all_prices_async())
-        finally:
-            loop.close()
-    else:
-        asyncio.run(_batch_update_all_prices_async())
+    """以同步方式呼叫非同步的批次作業 (給 Scheduler 背景執行緒使用)"""
+    asyncio.run(_batch_update_all_prices_async())
 
 
 async def check_all_prices():

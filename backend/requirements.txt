@@ -7,7 +7,7 @@ psycopg2-binary
 python-jose[cryptography]
 bcrypt
 python-multipart
-playwright
+beautifulsoup4
 apscheduler
 requests
 python-dotenv

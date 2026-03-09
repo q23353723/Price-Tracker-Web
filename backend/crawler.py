@@ -1,50 +1,42 @@
-from playwright.async_api import async_playwright
+import requests
+from bs4 import BeautifulSoup
 import re
 
-
-async def _get_meta_content(page, property_name: str) -> str | None:
+def _get_meta_content(soup: BeautifulSoup, property_name: str) -> str | None:
     """
-    安全地取得 meta tag 的 content，找不到直接回傳 None（不等待、不 timeout）。
-    使用 query_selector 而非 locator，避免「元素不存在時等到 timeout」的問題。
+    安全地取得 meta tag 的 content。
     """
-    el = await page.query_selector(f'meta[property="{property_name}"]')
-    if el:
-        return await el.get_attribute("content")
+    meta = soup.find('meta', property=property_name)
+    if meta and meta.get('content'):
+        return meta.get('content')
     return None
 
-
-async def _extract_price_momo(page) -> float | None:
+def _extract_price_momo(soup: BeautifulSoup) -> float | None:
     """
     momo 購物網專屬價格解析。
     頁面上可能有多個帶有 price 屬性的元素，取最後一個的 price 屬性值作為商品價格。
     """
-    price_str = await page.evaluate("""
-        () => {
-            const elements = document.querySelectorAll('[price]');
-            if (!elements || elements.length === 0) return null;
-            const last = elements[elements.length - 1];
-            return last.getAttribute('price');
-        }
-    """)
-    if price_str:
-        try:
-            return float(str(price_str).replace(",", ""))
-        except ValueError:
-            pass
+    elements = soup.find_all(attrs={"price": True})
+    if elements:
+        last = elements[-1]
+        price_str = last.get('price')
+        if price_str:
+            try:
+                return float(str(price_str).replace(",", ""))
+            except ValueError:
+                pass
     return None
 
-
-async def _extract_price_generic(page) -> float | None:
+def _extract_price_generic(soup: BeautifulSoup) -> float | None:
     """通用價格解析：優先 og:price:amount meta，再嘗試常見 CSS 選擇器。"""
-    # 1. og:price:amount meta（需用 query_selector，locator 找不到會 timeout）
-    og_price = await _get_meta_content(page, "og:price:amount")
+    og_price = _get_meta_content(soup, "og:price:amount")
     if og_price:
         try:
             return float(og_price.replace(",", ""))
         except ValueError:
             pass
 
-    # 2. 常見電商 CSS 選擇器
+    # 常見電商 CSS 選擇器
     selectors = [
         '[itemprop="price"]',
         '.price',
@@ -53,40 +45,53 @@ async def _extract_price_generic(page) -> float | None:
         '#price',
     ]
     for sel in selectors:
-        el = await page.query_selector(sel)
-        if el:
-            text = await el.inner_text()
+        for el in soup.select(sel):
+            text = el.get_text(strip=True)
             digits = re.sub(r"[^\d.]", "", text.replace(",", ""))
             if digits:
                 try:
                     return float(digits)
                 except ValueError:
                     continue
-
     return None
 
+async def fetch_product_details(url: str, shared_page=None):
+    """
+    爬取商品頁面，回傳 name、image_url、current_price。
+    原先使用 Playwright，現在為了節省資源改用 requests + BeautifulSoup 在背景執行緒解析。
+    (保留 shared_page 參數名稱只是為了與舊版簽名相容可不用)
+    """
+    import asyncio
+    return await asyncio.to_thread(_fetch_product_details_sync, url)
 
-async def _extract_product_from_page(page, url: str):
+def _fetch_product_details_sync(url: str):
     try:
-        await page.goto(url, timeout=45000, wait_until="domcontentloaded")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+        res = requests.get(url, headers=headers, timeout=15)
+        res.raise_for_status()
+        
+        soup = BeautifulSoup(res.text, "html.parser")
 
-        # 1. 圖片（og:image meta）
-        image_url = await _get_meta_content(page, "og:image")
+        # 1. 圖片
+        image_url = _get_meta_content(soup, "og:image")
 
         # 2. 商品名稱
-        name = await page.title()
-        og_title = await _get_meta_content(page, "og:title")
+        name = soup.title.string if soup.title else ""
+        og_title = _get_meta_content(soup, "og:title")
         if og_title:
             name = og_title
 
-        # 3. 價格：依據網域選擇策略
+        # 3. 價格
         price = None
         if "momoshop.com.tw" in url:
-            price = await _extract_price_momo(page)
+            price = _extract_price_momo(soup)
 
-        # 若網站專屬策略失敗，fallback 到通用邏輯
         if price is None:
-            price = await _extract_price_generic(page)
+            price = _extract_price_generic(soup)
 
         return {
             "name": name,
@@ -98,22 +103,3 @@ async def _extract_product_from_page(page, url: str):
         print(f"Error fetching {url}: {e}")
         return None
 
-async def fetch_product_details(url: str, shared_page=None):
-    """
-    爬取商品頁面，回傳 name、image_url、current_price。
-    支援 momo 購物網的專屬選擇器，並以通用邏輯作為後備。
-    若傳入 shared_page，則不啟動新的 browser 實體，直接共用現有畫面以節省記憶體。
-    """
-    if shared_page:
-        return await _extract_product_from_page(shared_page, url)
-
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--disable-extensions", "--single-process"]
-        )
-        page = await browser.new_page()
-        try:
-            return await _extract_product_from_page(page, url)
-        finally:
-            await browser.close()
