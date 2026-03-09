@@ -38,6 +38,10 @@ jobs:
           # 將 API 指向我們剛剛設定好的網域
           VITE_API_BASE_URL: https://api.laiyouda.com
 
+      - name: Copy index.html to 404.html
+        working-directory: ./frontend
+        run: cp dist/index.html dist/404.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -45,3 +49,4 @@ jobs:
           publish_dir: ./frontend/dist
           publish_branch: gh-pages
           force_orphan: true
+          cname: app.laiyouda.com
