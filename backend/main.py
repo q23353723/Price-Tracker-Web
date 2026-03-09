@@ -20,7 +20,7 @@ async def startup_event():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://q23353723.github.io"],
+    allow_origins=["http://localhost:5173", "https://q23353723.github.io", "https://app.laiyouda.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
