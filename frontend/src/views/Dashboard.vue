@@ -282,8 +282,23 @@ const addSubscription = async () => {
     }
     await api.post('/subscriptions/', payload)
     newSub.value = { product_url: '', target_price: '', notify_method: 'EMAIL' }
+    
+    // 先抓取一次 (這時可能還沒爬完價格，但會先出現 loading / 未知價格的卡片)
     await fetchSubscriptions()
-    showToast('商品已加入追蹤，正在抓取資料中...')
+    showToast('商品已加入追蹤，正在背景抓取最新價格...')
+    
+    // 實作簡單輪詢機制：每 3 秒重新檢查一次，最多檢查 5 次 (約 15 秒)
+    // 讓畫面能「自動」刷新出爬好的價格與圖片
+    let attempts = 0
+    const checkInterval = setInterval(async () => {
+      attempts++
+      await fetchSubscriptions()
+      // 如果你願意，也可以在前端比對是否有資料已經更新。這邊簡單每 3 秒強刷一次即可。
+      if (attempts >= 5) {
+        clearInterval(checkInterval)
+      }
+    }, 3000)
+
   } catch (error) {
     showToast(error.response?.data?.detail || '新增失敗', 'error')
   } finally {
