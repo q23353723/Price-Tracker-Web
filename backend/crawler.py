@@ -66,43 +66,54 @@ async def _extract_price_generic(page) -> float | None:
     return None
 
 
-async def fetch_product_details(url: str):
+async def _extract_product_from_page(page, url: str):
+    try:
+        await page.goto(url, timeout=45000, wait_until="domcontentloaded")
+
+        # 1. 圖片（og:image meta）
+        image_url = await _get_meta_content(page, "og:image")
+
+        # 2. 商品名稱
+        name = await page.title()
+        og_title = await _get_meta_content(page, "og:title")
+        if og_title:
+            name = og_title
+
+        # 3. 價格：依據網域選擇策略
+        price = None
+        if "momoshop.com.tw" in url:
+            price = await _extract_price_momo(page)
+
+        # 若網站專屬策略失敗，fallback 到通用邏輯
+        if price is None:
+            price = await _extract_price_generic(page)
+
+        return {
+            "name": name,
+            "image_url": image_url,
+            "current_price": price,
+        }
+
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+
+async def fetch_product_details(url: str, shared_page=None):
     """
     爬取商品頁面，回傳 name、image_url、current_price。
     支援 momo 購物網的專屬選擇器，並以通用邏輯作為後備。
+    若傳入 shared_page，則不啟動新的 browser 實體，直接共用現有畫面以節省記憶體。
     """
+    if shared_page:
+        return await _extract_product_from_page(shared_page, url)
+
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--disable-extensions", "--single-process"]
+        )
         page = await browser.new_page()
         try:
-            await page.goto(url, timeout=30000, wait_until="domcontentloaded")
-
-            # 1. 圖片（og:image meta）
-            image_url = await _get_meta_content(page, "og:image")
-
-            # 2. 商品名稱
-            name = await page.title()
-            og_title = await _get_meta_content(page, "og:title")
-            if og_title:
-                name = og_title
-
-            # 3. 價格：依據網域選擇策略
-            price = None
-            if "momoshop.com.tw" in url:
-                price = await _extract_price_momo(page)
-
-            # 若網站專屬策略失敗，fallback 到通用邏輯
-            if price is None:
-                price = await _extract_price_generic(page)
-
-            return {
-                "name": name,
-                "image_url": image_url,
-                "current_price": price,
-            }
-
-        except Exception as e:
-            print(f"Error fetching {url}: {e}")
-            return None
+            return await _extract_product_from_page(page, url)
         finally:
             await browser.close()
