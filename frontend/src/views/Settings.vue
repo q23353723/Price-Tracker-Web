@@ -6,7 +6,9 @@
         <div class="brand-icon-sm">
           <svg viewBox="0 0 40 40" fill="none" width="32" height="32">
             <rect width="40" height="40" rx="10" fill="url(#sb-s-grad)"/>
-            <path d="M12 28L20 12L28 28M15.5 22H24.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 14V8h-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="8" y="14" width="24" height="18" rx="4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 23h4M32 23h4M25 21v3M15 21v3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <defs>
               <linearGradient id="sb-s-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#6366F1"/><stop offset="1" stop-color="#818CF8"/>
@@ -14,7 +16,7 @@
             </defs>
           </svg>
         </div>
-        <span v-if="!sidebarCollapsed" class="brand-text">PriceTracker</span>
+        <span v-if="!sidebarCollapsed" class="brand-text">電商追蹤寶</span>
         <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16">
             <path v-if="!sidebarCollapsed" d="M15 18l-6-6 6-6"/>
@@ -390,15 +392,23 @@ onMounted(fetchProfile)
 .sidebar.collapsed { width: 64px; }
 .sidebar-brand {
   display: flex;
-  align-items: center;
+  align-items: center; /* 確保垂直置中 */
+  justify-content: center; /* 確保縮小狀態時水平置中 */
   gap: 10px;
   padding: 20px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  min-height: 73px; /* 防止收合時高度坍塌而移位 */
+}
+.sidebar.collapsed .sidebar-brand {
+  flex-direction: column;
+  padding: 16px 8px;
 }
 .brand-text {
-  font-family: 'Fira Code', monospace;
-  font-size: 15px;
+  font-family: 'Fira Code', system-ui, -apple-system, "Noto Sans TC", sans-serif;
+  font-size: 18px;
   font-weight: 700;
+  letter-spacing: 0.5px;
   color: #E2E8F0;
   white-space: nowrap;
   flex: 1;
@@ -406,7 +416,8 @@ onMounted(fetchProfile)
 .collapse-btn {
   background: none; border: none; cursor: pointer;
   color: #94A3B8; padding: 4px;
-  display: flex; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
   transition: all 200ms ease; flex-shrink: 0;
 }
 .collapse-btn:hover { color: #E2E8F0; background: rgba(255,255,255,0.05); }
@@ -422,6 +433,10 @@ onMounted(fetchProfile)
   cursor: pointer; background: none; border: none;
   width: 100%; text-align: left;
   transition: all 200ms ease; white-space: nowrap;
+}
+.sidebar.collapsed .nav-item {
+  justify-content: center; /* 縮合時讓單一圖示居中 */
+  padding: 12px;
 }
 .nav-item:hover { color: #E2E8F0; background: rgba(255,255,255,0.06); }
 .nav-item.active-nav,

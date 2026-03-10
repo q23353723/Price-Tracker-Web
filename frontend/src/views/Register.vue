@@ -10,7 +10,9 @@
         <div class="brand-icon">
           <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
             <rect width="40" height="40" rx="12" fill="url(#brand-grad-r)"/>
-            <path d="M12 28L20 12L28 28M15.5 22H24.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 14V8h-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="8" y="14" width="24" height="18" rx="4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 23h4M32 23h4M25 21v3M15 21v3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <defs>
               <linearGradient id="brand-grad-r" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#6366F1"/><stop offset="1" stop-color="#818CF8"/>
@@ -19,7 +21,7 @@
           </svg>
         </div>
         <div>
-          <div class="brand-name">PriceTracker</div>
+          <div class="brand-name">電商追蹤寶</div>
           <div class="brand-tagline">即時監控，智慧通知</div>
         </div>
       </div>

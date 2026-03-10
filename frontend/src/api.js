@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000', // 預設為本地端開發使用
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.laiyouda.com', // 預設為本地端開發使用
 });
 
 api.interceptors.request.use((config) => {
