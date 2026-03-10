@@ -50,6 +50,8 @@ jobs:
             echo "SECRET_KEY=${{ secrets.BACKEND_SECRET_KEY }}" >> .env.prod
             echo "ALGORITHM=HS256" >> .env.prod
             echo "ACCESS_TOKEN_EXPIRE_MINUTES=1440" >> .env.prod
+            echo "LINE_CHANNEL_ACCESS_TOKEN=${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}" >> .env.prod
+            echo "LINE_CHANNEL_SECRET=${{ secrets.LINE_CHANNEL_SECRET }}" >> .env.prod
             
             # 重新啟動服務
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d --build

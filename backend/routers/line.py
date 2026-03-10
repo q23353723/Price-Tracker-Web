@@ -36,6 +36,10 @@ async def line_webhook(request: Request, db: Session = Depends(database.get_db))
         events = parser.parse(body_str, signature)
         
         for event in events:
+            # 略過 Line Developer Console 的驗證測試假 Token
+            if hasattr(event, "reply_token") and event.reply_token in ["00000000000000000000000000000000", "ffffffffffffffffffffffffffffffff"]:
+                continue
+                
             if isinstance(event, MessageEvent) and isinstance(event.message, TextMessage):
                 handle_text_message(event, db)
                 
